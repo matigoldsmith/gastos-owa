@@ -1,0 +1,53 @@
+# Entorno virtual
+venv/
+.venv/
+env/
+
+# Variables de entorno (contiene API keys)
+.env
+
+# Base de datos local
+*.db
+*.db-shm
+*.db-wal
+fotos_cache.db
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Credenciales OAuth
+credentials.json
+token.json
+token_*.json
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Logs
+*.log
+logs/
+
+# Cache
+.cache/
+thumb_cache/
+thumb_cache_*/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Backups
+*_backup_*.py
+*.bak

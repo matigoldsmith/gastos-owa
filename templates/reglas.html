@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Reglas — Expense Tracker{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold text-gray-900 mb-6">Reglas aprendidas</h1>
+
+{% if reglas %}
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+  <table class="w-full text-sm">
+    <thead class="bg-gray-50 text-gray-500 uppercase text-xs">
+      <tr>
+        <th class="text-left px-4 py-3">Patrón</th>
+        <th class="text-left px-4 py-3">Tipo</th>
+        <th class="text-left px-4 py-3">Categoría</th>
+        <th class="text-right px-4 py-3">Usos</th>
+        <th class="text-left px-4 py-3">Creada</th>
+        <th class="text-center px-4 py-3">Acción</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in reglas %}
+      <tr id="regla-{{ r.id }}" class="border-t border-gray-100 hover:bg-gray-50">
+        <td class="px-4 py-3 font-mono font-medium">{{ r.patron }}</td>
+        <td class="px-4 py-3 text-gray-500 text-xs">{{ r.tipo }}</td>
+        <td class="px-4 py-3">{{ r.categoria_nombre }}</td>
+        <td class="px-4 py-3 text-right text-gray-600">{{ r.usos }}</td>
+        <td class="px-4 py-3 text-gray-400 text-xs">{{ r.created_at[:10] if r.created_at else '—' }}</td>
+        <td class="px-4 py-3 text-center">
+          <button onclick="desactivar({{ r.id }})"
+            class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200">
+            Desactivar
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-gray-400">Sin reglas todavía. Se crean automáticamente al dar feedback.</p>
+{% endif %}
+
+<p class="text-xs text-gray-400 mt-4">
+  Las reglas se crean desde el botón 💬 (feedback global) o desde el feedback por gasto individual.
+</p>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function desactivar(id) {
+  if (!confirm('¿Desactivar esta regla?')) return;
+  const res = await fetch(`/reglas/${id}/desactivar`, {method: 'POST'});
+  if ((await res.json()).ok) {
+    document.getElementById(`regla-${id}`)?.remove();
+    toast('Regla desactivada');
+  }
+}
+</script>
+{% endblock %}

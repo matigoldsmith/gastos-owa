@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Expense Tracker{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .low-conf { background-color: #fef3c7; }
+    .badge { @apply inline-block text-xs font-medium px-2 py-0.5 rounded-full; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen">
+
+  <!-- Nav -->
+  <nav class="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-6">
+    <span class="font-semibold text-gray-900">💼 Expense Tracker</span>
+    <a href="/"        class="text-sm text-gray-600 hover:text-gray-900 {% if request.path == '/' %}font-semibold text-gray-900{% endif %}">Dashboard</a>
+    <a href="/gastos"  class="text-sm text-gray-600 hover:text-gray-900 {% if '/gastos' in request.path %}font-semibold text-gray-900{% endif %}">Gastos</a>
+    <a href="/reglas"  class="text-sm text-gray-600 hover:text-gray-900 {% if '/reglas' in request.path %}font-semibold text-gray-900{% endif %}">Reglas</a>
+  </nav>
+
+  <!-- Feedback global flotante -->
+  <div id="feedback-bar" class="fixed bottom-4 right-4 z-50 w-96 bg-white rounded-xl shadow-lg border border-gray-200 p-4 hidden">
+    <p class="text-sm font-medium text-gray-700 mb-2">Feedback global</p>
+    <textarea id="feedback-text" rows="2"
+      class="w-full text-sm border border-gray-200 rounded-lg p-2 resize-none focus:outline-none focus:ring-2 focus:ring-blue-300"
+      placeholder='Ej: "todo lo de Copec es combustible"'></textarea>
+    <div class="flex gap-2 mt-2">
+      <button onclick="enviarFeedback(null)" class="flex-1 bg-blue-600 text-white text-sm rounded-lg py-1.5 hover:bg-blue-700">Aplicar</button>
+      <button onclick="closeFeedback()" class="flex-1 bg-gray-100 text-sm rounded-lg py-1.5 hover:bg-gray-200">Cancelar</button>
+    </div>
+    <p id="feedback-result" class="text-xs text-gray-500 mt-1 hidden"></p>
+  </div>
+
+  <button onclick="document.getElementById('feedback-bar').classList.toggle('hidden')"
+    class="fixed bottom-4 right-4 z-40 bg-blue-600 text-white rounded-full w-12 h-12 text-xl shadow-lg hover:bg-blue-700 flex items-center justify-center">
+    💬
+  </button>
+
+  <main class="max-w-6xl mx-auto px-6 py-8">
+    {% block content %}{% endblock %}
+  </main>
+
+  <script>
+    // Feedback global
+    async function enviarFeedback(gastoId) {
+      const texto = document.getElementById('feedback-text').value.trim();
+      if (!texto) return;
+      const res = await fetch('/feedback', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({texto, gasto_id: gastoId})
+      });
+      const data = await res.json();
+      const p = document.getElementById('feedback-result');
+      p.textContent = data.accion || data.error;
+      p.classList.remove('hidden');
+      document.getElementById('feedback-text').value = '';
+      setTimeout(() => p.classList.add('hidden'), 4000);
+    }
+
+    function closeFeedback() {
+      document.getElementById('feedback-bar').classList.add('hidden');
+    }
+
+    // Utilidad para mostrar notificaciones rápidas
+    function toast(msg, ok=true) {
+      const el = document.createElement('div');
+      el.className = `fixed top-4 right-4 z-50 px-4 py-2 rounded-lg text-sm text-white shadow ${ok ? 'bg-green-600' : 'bg-red-600'}`;
+      el.textContent = msg;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3000);
+    }
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

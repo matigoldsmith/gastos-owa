@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block title %}Gastos — Expense Tracker{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold text-gray-900">Gastos <span class="text-gray-400 font-normal text-base">({{ total }})</span></h1>
+</div>
+
+<!-- Filtros -->
+<form method="GET" class="flex flex-wrap gap-3 mb-6 bg-white border border-gray-200 rounded-xl p-4">
+  <select name="cat" class="text-sm border border-gray-200 rounded-lg px-3 py-1.5">
+    <option value="">Todas las categorías</option>
+    {% for cat in categorias %}
+    <option value="{{ cat.id }}" {% if filtros.cat == cat.id %}selected{% endif %}>{{ cat.nombre }}</option>
+    {% endfor %}
+  </select>
+
+  <select name="revisado" class="text-sm border border-gray-200 rounded-lg px-3 py-1.5">
+    <option value="">Todos</option>
+    <option value="0" {% if filtros.revisado == '0' %}selected{% endif %}>Sin revisar</option>
+    <option value="1" {% if filtros.revisado == '1' %}selected{% endif %}>Revisados</option>
+  </select>
+
+  <select name="moneda" class="text-sm border border-gray-200 rounded-lg px-3 py-1.5">
+    <option value="">Todas las monedas</option>
+    <option value="CLP" {% if filtros.moneda == 'CLP' %}selected{% endif %}>CLP</option>
+    <option value="USD" {% if filtros.moneda == 'USD' %}selected{% endif %}>USD</option>
+    <option value="EUR" {% if filtros.moneda == 'EUR' %}selected{% endif %}>EUR</option>
+  </select>
+
+  <button type="submit" class="bg-blue-600 text-white text-sm px-4 py-1.5 rounded-lg hover:bg-blue-700">Filtrar</button>
+  <a href="/gastos" class="text-sm text-gray-500 px-3 py-1.5 hover:text-gray-800">Limpiar</a>
+</form>
+
+<!-- Tabla -->
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+  <table class="w-full text-sm">
+    <thead class="bg-gray-50 text-gray-500 uppercase text-xs">
+      <tr>
+        <th class="text-left px-4 py-3">Fecha</th>
+        <th class="text-left px-4 py-3">Proveedor</th>
+        <th class="text-left px-4 py-3">Categoría</th>
+        <th class="text-right px-4 py-3">Monto</th>
+        <th class="text-center px-4 py-3">Conf.</th>
+        <th class="text-center px-4 py-3">Estado</th>
+        <th class="text-center px-4 py-3">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for g in gastos %}
+      <tr id="row-{{ g.id }}" class="border-t border-gray-100 hover:bg-gray-50 {% if g.confianza < 0.7 and not g.revisado %}low-conf{% endif %}">
+        <td class="px-4 py-3 text-gray-500">{{ g.fecha or '—' }}</td>
+        <td class="px-4 py-3 font-medium max-w-[180px] truncate" title="{{ g.proveedor }}">{{ g.proveedor or '—' }}</td>
+        <td class="px-4 py-3">
+          <select onchange="cambiarCategoria({{ g.id }}, this.value)"
+            class="text-xs border border-gray-200 rounded px-1 py-0.5 max-w-[150px]">
+            {% for cat in categorias %}
+            <option value="{{ cat.id }}" {% if cat.id == g.categoria_id %}selected{% endif %}>{{ cat.nombre }}</option>
+            {% endfor %}
+          </select>
+        </td>
+        <td class="px-4 py-3 text-right font-semibold">
+          {{ "${:,.0f}".format(g.monto) if g.monto else '—' }}
+          <span class="text-gray-400 font-normal text-xs">{{ g.moneda }}</span>
+        </td>
+        <td class="px-4 py-3 text-center">
+          <span class="text-xs {% if g.confianza >= 0.8 %}text-green-600{% elif g.confianza >= 0.5 %}text-amber-600{% else %}text-red-500{% endif %}">
+            {{ "%.0f%%"|format(g.confianza * 100) }}
+          </span>
+        </td>
+        <td class="px-4 py-3 text-center">
+          {% if g.revisado %}
+            <span class="badge bg-green-100 text-green-700">✓</span>
+          {% else %}
+            <span class="badge bg-amber-100 text-amber-700">pendiente</span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-3 text-center">
+          <div class="flex items-center justify-center gap-2">
+            {% if not g.revisado %}
+            <button onclick="revisar({{ g.id }})"
+              class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200">OK</button>
+            {% endif %}
+            <button onclick="abrirFeedbackGasto({{ g.id }}, '{{ g.proveedor | replace("'","\\'")}}')"
+              class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200">feedback</button>
+            <button onclick="eliminar({{ g.id }})"
+              class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200">✕</button>
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">Sin gastos con los filtros actuales.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Paginación -->
+{% if total_pages > 1 %}
+<div class="flex gap-2 mt-4 justify-center">
+  {% for p in range(1, total_pages + 1) %}
+  <a href="?page={{ p }}&cat={{ filtros.cat or '' }}&revisado={{ filtros.revisado or '' }}&moneda={{ filtros.moneda or '' }}"
+     class="text-sm px-3 py-1.5 rounded-lg border {% if p == page %}bg-blue-600 text-white border-blue-600{% else %}bg-white border-gray-200 text-gray-600 hover:bg-gray-50{% endif %}">
+    {{ p }}
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Modal feedback por gasto -->
+<div id="modal-feedback" class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center hidden">
+  <div class="bg-white rounded-xl p-6 w-96 shadow-xl">
+    <h3 class="font-semibold text-gray-900 mb-1">Feedback para gasto</h3>
+    <p id="modal-proveedor" class="text-sm text-gray-500 mb-3"></p>
+    <textarea id="modal-texto" rows="3"
+      class="w-full text-sm border border-gray-200 rounded-lg p-2 resize-none focus:outline-none focus:ring-2 focus:ring-blue-300"
+      placeholder='Ej: "este proveedor siempre es consultoría"'></textarea>
+    <p id="modal-result" class="text-xs text-gray-500 mt-1 hidden"></p>
+    <div class="flex gap-2 mt-3">
+      <button onclick="enviarFeedbackGasto()" class="flex-1 bg-blue-600 text-white text-sm rounded-lg py-2 hover:bg-blue-700">Enviar</button>
+      <button onclick="cerrarModal()" class="flex-1 bg-gray-100 text-sm rounded-lg py-2 hover:bg-gray-200">Cancelar</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let modalGastoId = null;
+
+async function revisar(id) {
+  const sel = document.querySelector(`#row-${id} select`);
+  const catId = sel ? parseInt(sel.value) : null;
+  const res = await fetch(`/gastos/${id}/revisar`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({categoria_id: catId})
+  });
+  if ((await res.json()).ok) {
+    const row = document.getElementById(`row-${id}`);
+    row.classList.remove('low-conf');
+    row.querySelector('td:nth-child(6)').innerHTML = '<span class="badge bg-green-100 text-green-700">✓</span>';
+    row.querySelector('button[onclick^="revisar"]')?.remove();
+    toast('Revisado ✓');
+  }
+}
+
+async function cambiarCategoria(id, catId) {
+  // Solo actualiza sin marcar revisado (el usuario puede cambiar y luego hacer OK)
+}
+
+async function eliminar(id) {
+  if (!confirm('¿Eliminar este gasto?')) return;
+  const res = await fetch(`/gastos/${id}/eliminar`, {method: 'POST'});
+  if ((await res.json()).ok) {
+    document.getElementById(`row-${id}`)?.remove();
+    toast('Eliminado');
+  }
+}
+
+function abrirFeedbackGasto(id, proveedor) {
+  modalGastoId = id;
+  document.getElementById('modal-proveedor').textContent = proveedor;
+  document.getElementById('modal-texto').value = '';
+  document.getElementById('modal-result').classList.add('hidden');
+  document.getElementById('modal-feedback').classList.remove('hidden');
+  document.getElementById('modal-texto').focus();
+}
+
+function cerrarModal() {
+  document.getElementById('modal-feedback').classList.add('hidden');
+  modalGastoId = null;
+}
+
+async function enviarFeedbackGasto() {
+  const texto = document.getElementById('modal-texto').value.trim();
+  if (!texto) return;
+  const res  = await fetch('/feedback', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({texto, gasto_id: modalGastoId})
+  });
+  const data = await res.json();
+  const p = document.getElementById('modal-result');
+  p.textContent = data.accion || data.error;
+  p.classList.remove('hidden');
+  setTimeout(() => { cerrarModal(); toast(data.accion || 'Feedback aplicado'); }, 2000);
+}
+</script>
+{% endblock %}
